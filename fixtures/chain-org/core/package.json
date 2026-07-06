@@ -1,6 +1,0 @@
-{
-  "name": "@acme/core",
-  "version": "1.0.0",
-  "description": "Foundational library at the bottom of the dependency chain.",
-  "type": "module"
-}

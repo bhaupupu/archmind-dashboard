@@ -1,9 +1,0 @@
-{
-  "name": "@acme/api",
-  "version": "1.2.0",
-  "description": "Mid-tier service; depends on @acme/core.",
-  "type": "module",
-  "dependencies": {
-    "@acme/core": "^1.0.0"
-  }
-}

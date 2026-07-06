@@ -1,9 +1,0 @@
-{
-  "name": "@acme/gateway",
-  "version": "2.0.0",
-  "description": "Edge gateway; depends on @acme/api (which depends on @acme/core).",
-  "type": "module",
-  "dependencies": {
-    "@acme/api": "^1.0.0"
-  }
-}

@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const handleAnalyze = async (prompt: string) => {
     setAnalyzing(true);
     try {
-      const res = await fetch('/api/v1/analyze', {
+      const res = await fetch('/api/v1/analyses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
