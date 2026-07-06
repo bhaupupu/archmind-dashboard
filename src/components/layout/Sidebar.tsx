@@ -2,28 +2,30 @@
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Box, Database, Share2, Activity, GitBranch, GitPullRequest, 
-  Bot, ShieldAlert, Lightbulb, LineChart, Settings, HelpCircle,
+import {
+  Box, Database, Share2, Activity, GitBranch, GitPullRequest,
+  Bot, ShieldAlert, Lightbulb, LineChart, Settings,
   PlusCircle
 } from "lucide-react";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+
 export function Sidebar() {
-  const [active, setActive] = useState("Overview");
+  const pathname = usePathname();
 
   const navItems = [
-    { name: "Overview", icon: Box },
-    { name: "Repositories", icon: Database },
-    { name: "Architecture Graph", icon: Share2 },
-    { name: "Analyses", icon: Activity },
-    { name: "Workflows", icon: GitBranch },
-    { name: "Pull Requests", icon: GitPullRequest },
-    { name: "Agents", icon: Bot },
-    { name: "Risks", icon: ShieldAlert },
-    { name: "Recommendations", icon: Lightbulb },
-    { name: "Insights", icon: LineChart },
+    { name: "Overview", icon: Box, href: "/" },
+    { name: "Repositories", icon: Database, href: "/repositories" },
+    { name: "Architecture Graph", icon: Share2, href: "/graph" },
+    { name: "Analyses", icon: Activity, href: "/analyses" },
+    { name: "Workflows", icon: GitBranch, href: "/workflows" },
+    { name: "Pull Requests", icon: GitPullRequest, href: "/pull-requests" },
+    { name: "Agents", icon: Bot, href: "/agents" },
+    { name: "Risks", icon: ShieldAlert, href: "/risks" },
+    { name: "Recommendations", icon: Lightbulb, href: "/recommendations" },
+    { name: "Insights", icon: LineChart, href: "/insights" },
   ];
 
   return (
@@ -37,21 +39,24 @@ export function Sidebar() {
 
       <ScrollArea className="flex-1 px-3">
         <div className="space-y-1 mb-8">
-          {navItems.map((item) => (
-            <Button 
-              key={item.name}
-              variant="ghost" 
-              onClick={() => setActive(item.name)}
-              className={cn(
-                "w-full justify-start gap-3 hover:bg-white/5",
-                active === item.name 
-                  ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:text-blue-500 font-medium" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <item.icon className="w-4 h-4" /> {item.name}
-            </Button>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+            return (
+              <Link href={item.href} key={item.name} className="block w-full">
+                <Button 
+                  variant="ghost" 
+                  className={cn(
+                    "w-full justify-start gap-3 hover:bg-white/5",
+                    isActive 
+                      ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:text-blue-500 font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <item.icon className="w-4 h-4" /> {item.name}
+                </Button>
+              </Link>
+            );
+          })}
         </div>
 
 
@@ -86,12 +91,11 @@ export function Sidebar() {
       </ScrollArea>
       
       <div className="p-3 border-t border-border mt-auto">
-        <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
-          <Settings className="w-4 h-4" /> Settings
-        </Button>
-        <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
-          <HelpCircle className="w-4 h-4" /> Help & Docs
-        </Button>
+        <Link href="/settings" className="block w-full">
+          <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
+            <Settings className="w-4 h-4" /> Settings
+          </Button>
+        </Link>
       </div>
     </div>
   );

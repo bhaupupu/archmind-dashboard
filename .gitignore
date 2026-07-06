@@ -33,6 +33,13 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local data (raw Postgres pages, mock stores) — never belongs in git
+/.data
+
+# local Prisma SQLite artifacts
+prisma/*.db
+prisma/*.db-journal
+
 # vercel
 .vercel
 

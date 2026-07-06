@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '../auth';
-import { buildGitHubGraph } from '../../../../lib/github-graph';
+import prisma from '../../../../lib/db';
 
 export async function GET(req: NextRequest) {
   const id = requireRole(req, ['viewer', 'member', 'admin']);
-  if (id instanceof NextResponse) return id; // Auth failed
-
-  if (!id.githubToken) {
-    return NextResponse.json({ error: 'github_token_missing' }, { status: 400 });
-  }
+  if (id instanceof NextResponse) return id;
 
   try {
-    const { repos } = await buildGitHubGraph(id.githubToken, id.tenantId);
+    const repos = await prisma.repository.findMany({
+      where: { userId: id.tenantId },
+      orderBy: { updatedAt: 'desc' },
+    });
     return NextResponse.json({ repos });
   } catch (err) {
-    console.error('Failed to list repos via GitHub', err);
-    return NextResponse.json({ error: 'github_api_error' }, { status: 500 });
+    console.error('Failed to list repos from database', err);
+    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
   }
 }

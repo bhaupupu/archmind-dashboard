@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as jwt from 'jsonwebtoken';
+import prisma from '@/lib/db';
+import { encrypt } from '@/lib/encryption';
+import { getEnv } from '@/lib/env';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-do-not-use-in-prod';
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const { JWT_SECRET, BASE_URL, GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = getEnv();
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
   if (!code) return NextResponse.json({ error: 'missing_code' }, { status: 400 });
-  
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    return NextResponse.json({ error: 'github_not_configured' }, { status: 500 });
-  }
-  
+
   try {
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
@@ -39,13 +35,31 @@ export async function GET(req: NextRequest) {
     
     const userData = await userRes.json() as { id: number, login: string };
     
+    // UPSERT USER IN DATABASE
+    const encryptedToken = encrypt(tokenData.access_token);
+    let user = await prisma.user.findUnique({ where: { githubId: userData.id } });
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { username: userData.login, githubToken: encryptedToken }
+      });
+    } else {
+      user = await prisma.user.create({
+        data: {
+          githubId: userData.id,
+          username: userData.login,
+          githubToken: encryptedToken
+        }
+      });
+    }
+
     const token = jwt.sign(
-      { sub: userData.login, gh_token: tokenData.access_token },
+      { sub: user.id, username: userData.login },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
     
-    const res = NextResponse.redirect(BASE_URL, 302);
+    const res = NextResponse.redirect(new URL('/onboarding', BASE_URL), 302);
     res.cookies.set('atlas_session', token, {
       path: '/',
       httpOnly: true,

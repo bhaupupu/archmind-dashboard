@@ -1,17 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '../auth';
 import { buildGitHubGraph } from '../../../../lib/github-graph';
+import prisma from '../../../../lib/db';
 import crypto from 'crypto';
+import { decrypt } from '@/lib/encryption';
+import { getEnv } from '@/lib/env';
+import { makeRateLimiter, checkRateLimit } from '@/lib/ratelimit';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Allow up to ~5min for larger orgs; indexing is still synchronous (see github-graph.ts).
+export const maxDuration = 300;
+
+const { GEMINI_API_KEY } = getEnv();
+
+// 5 requests per 10 seconds per user — this endpoint calls a paid/quota-limited
+// LLM API plus a full GitHub repo scan, so it's the most cost-sensitive route.
+const ratelimit = makeRateLimiter(5, '10 s');
 
 export async function POST(req: NextRequest) {
   const id = requireRole(req, ['member', 'admin']);
   if (id instanceof NextResponse) return id;
 
-  if (!id.githubToken) {
+  // Check the limit before any DB/decrypt/network work so a rejected request costs nothing.
+  const limit = await checkRateLimit(ratelimit, id.tenantId);
+  if (!limit.ok) {
+    return NextResponse.json({ error: 'rate_limit_exceeded' }, { status: 429 });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: id.tenantId } });
+  if (!user || !user.githubToken) {
     return NextResponse.json({ error: 'github_token_missing' }, { status: 400 });
   }
+  const githubToken = decrypt(user.githubToken);
+  const geminiKey = user.geminiKey ? decrypt(user.geminiKey) : GEMINI_API_KEY;
 
   const body = await req.json();
   const prompt = (body.prompt ?? '').trim();
@@ -19,15 +39,15 @@ export async function POST(req: NextRequest) {
 
   const wantsStream = req.headers.get('accept')?.includes('text/event-stream');
 
-  const { repos, graph } = await buildGitHubGraph(id.githubToken, id.tenantId);
+  const { repos, graph } = await buildGitHubGraph(githubToken, id.tenantId);
 
   let summary = `Analysis of prompt: ${prompt}\n\n`;
   const affectedRepos: any[] = [];
   const plans: any[] = [];
 
-  if (GEMINI_API_KEY) {
+  if (geminiKey) {
     try {
-      const llmRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const llmRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +70,7 @@ export async function POST(req: NextRequest) {
           repoId: repos[0],
           disposition: 'must_change',
           evidence: [],
-          reasoning: summary
+          rationale: summary
         });
         plans.push({
           repoId: repos[0],
@@ -67,7 +87,7 @@ export async function POST(req: NextRequest) {
         repoId: repos[0],
         disposition: 'must_change',
         evidence: [],
-        reasoning: 'Primary repo affected by the change.'
+        rationale: 'Primary repo affected by the change.'
       });
     }
     if (repos.length > 1) {
@@ -75,7 +95,7 @@ export async function POST(req: NextRequest) {
         repoId: repos[1],
         disposition: 'may_change',
         evidence: [],
-        reasoning: 'Dependent repo that might require updates.'
+        rationale: 'Dependent repo that might require updates.'
       });
     }
   }
@@ -90,6 +110,16 @@ export async function POST(req: NextRequest) {
     plans,
     summary,
   };
+
+  // Persist to database
+  await prisma.analysis.create({
+    data: {
+      id: report.id,
+      prompt: report.prompt,
+      result: JSON.stringify(report),
+      userId: id.tenantId
+    }
+  });
 
   if (wantsStream) {
     const encoder = new TextEncoder();
