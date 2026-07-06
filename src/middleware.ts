@@ -4,13 +4,14 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('atlas_session');
   
-  if (request.nextUrl.pathname === '/login') {
-    if (token) return NextResponse.redirect(new URL('/', request.url));
+  if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/') {
+    if (token) return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (request.nextUrl.pathname === '/login') return NextResponse.next();
     return NextResponse.next();
   }
 
   // Denylist, not allowlist: every UI route requires auth except these public pages.
-  const publicUIRoutes = ['/login', '/terms', '/privacy'];
+  const publicUIRoutes = ['/', '/login', '/terms', '/privacy'];
   const isProtectedUI = !request.nextUrl.pathname.startsWith('/api/') &&
                         !publicUIRoutes.includes(request.nextUrl.pathname);
   const isProtectedApi = request.nextUrl.pathname.startsWith('/api/v1/') &&

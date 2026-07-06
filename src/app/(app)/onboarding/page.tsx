@@ -62,7 +62,7 @@ export default function OnboardingPage() {
       });
       
       if (res.ok) {
-        router.push('/');
+        router.push('/dashboard');
       } else {
         console.error('Failed to save repos');
         setSaving(false);
