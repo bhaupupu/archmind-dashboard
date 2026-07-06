@@ -11,13 +11,14 @@ import { Octokit } from '@octokit/rest';
 // Allow up to ~5min for larger orgs; indexing is still synchronous (see github-graph.ts).
 export const maxDuration = 300;
 
-const { GEMINI_API_KEY } = getEnv();
+
 
 // 5 requests per 10 seconds per user — this endpoint calls a paid/quota-limited
 // LLM API plus a full GitHub repo scan, so it's the most cost-sensitive route.
 const ratelimit = makeRateLimiter(5, '10 s');
 
 export async function POST(req: NextRequest) {
+  const { GEMINI_API_KEY } = getEnv();
   const id = requireRole(req, ['member', 'admin']);
   if (id instanceof NextResponse) return id;
 

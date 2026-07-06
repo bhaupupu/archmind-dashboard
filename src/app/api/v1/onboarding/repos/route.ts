@@ -9,10 +9,11 @@ import { makeRateLimiter, checkRateLimit } from '@/lib/ratelimit';
 
 export const maxDuration = 60;
 
-const { JWT_SECRET } = getEnv();
+
 const ratelimit = makeRateLimiter(10, '10 s');
 
 async function getSession() {
+  const { JWT_SECRET } = getEnv();
   const cookieStore = await cookies();
   const token = cookieStore.get('atlas_session')?.value;
   if (!token) return null;

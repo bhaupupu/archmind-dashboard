@@ -4,9 +4,9 @@ import prisma from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
 import { getEnv } from '@/lib/env';
 
-const { JWT_SECRET, BASE_URL, GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = getEnv();
 
 export async function GET(req: NextRequest) {
+  const { JWT_SECRET, BASE_URL, GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = getEnv();
   const code = req.nextUrl.searchParams.get('code');
   if (!code) return NextResponse.json({ error: 'missing_code' }, { status: 400 });
 

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as jwt from 'jsonwebtoken';
 import { getEnv } from '@/lib/env';
 
-const { JWT_SECRET } = getEnv();
 
 export interface Identity {
   tenantId: string;
@@ -11,6 +10,7 @@ export interface Identity {
 }
 
 export function getIdentity(req: NextRequest): Identity | null {
+  const { JWT_SECRET } = getEnv();
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
