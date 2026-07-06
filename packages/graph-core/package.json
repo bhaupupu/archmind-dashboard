@@ -1,8 +1,0 @@
-{
-  "name": "@atlas/graph-core",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "description": "In-memory org knowledge graph (docs/03 Tier 1). Node/edge taxonomy, permission-scoped traversals, dependents + blast-radius queries. The production Tier 1 lives in Neo4j; this validates the query semantics and the ACL model."
-}

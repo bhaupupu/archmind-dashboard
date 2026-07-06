@@ -1,0 +1,546 @@
+{
+  "analyses": {
+    "local-3repo-3affected": {
+      "analysisId": "local-3repo-3affected",
+      "prompt": "jsonwebtoken",
+      "affectedRepos": [
+        {
+          "repoId": "auth-lib",
+          "repoFullName": "auth-lib",
+          "disposition": "must_change",
+          "rationale": "Directly matches the request; retrieval found relevant code in 1 location(s).",
+          "evidence": [
+            {
+              "kind": "file",
+              "repo": "auth-lib",
+              "path": "package.json",
+              "startLine": 1,
+              "endLine": 11
+            }
+          ],
+          "confidence": 0.7
+        },
+        {
+          "repoId": "billing-svc",
+          "repoFullName": "billing-svc",
+          "disposition": "may_change",
+          "rationale": "Depends on auth-lib (cross-repo DEPENDS_ON) which must change; review for downstream impact.",
+          "evidence": [
+            {
+              "kind": "graph",
+              "edgeId": "repo:billing-svc->repo:auth-lib",
+              "edgeType": "DEPENDS_ON",
+              "confidence": 0.95
+            }
+          ],
+          "confidence": 0.95
+        },
+        {
+          "repoId": "web-app",
+          "repoFullName": "web-app",
+          "disposition": "may_change",
+          "rationale": "Depends on auth-lib (cross-repo DEPENDS_ON) which must change; review for downstream impact.",
+          "evidence": [
+            {
+              "kind": "graph",
+              "edgeId": "repo:web-app->repo:auth-lib",
+              "edgeType": "DEPENDS_ON",
+              "confidence": 0.95
+            }
+          ],
+          "confidence": 0.95
+        }
+      ],
+      "plans": [],
+      "createdAt": "2026-07-05T20:50:34.140Z"
+    },
+    "agent-3repo-3affected": {
+      "analysisId": "agent-3repo-3affected",
+      "prompt": "jsonwebtoken",
+      "globalVerdict": "feasible",
+      "executiveSummary": "The requested change \"jsonwebtoken\" touches 3 repositories and appears feasible to implement across the stack.",
+      "affectedRepos": [
+        {
+          "repoId": "auth-lib",
+          "repoFullName": "auth-lib",
+          "disposition": "must_change",
+          "rationale": "Relevant code for the request found in 1 location(s).",
+          "evidence": [
+            {
+              "kind": "file",
+              "repo": "auth-lib",
+              "path": "package.json",
+              "startLine": 1,
+              "endLine": 11
+            }
+          ],
+          "confidence": 0.7
+        },
+        {
+          "repoId": "billing-svc",
+          "repoFullName": "billing-svc",
+          "disposition": "may_change",
+          "rationale": "Pulled into blast radius via auth-lib (transitive coupling); review for downstream impact.",
+          "evidence": [
+            {
+              "kind": "graph",
+              "edgeId": "multi-hop",
+              "edgeType": "DEPENDS_ON",
+              "confidence": 0.85
+            }
+          ],
+          "confidence": 0.85
+        },
+        {
+          "repoId": "web-app",
+          "repoFullName": "web-app",
+          "disposition": "may_change",
+          "rationale": "Pulled into blast radius via auth-lib (transitive coupling); review for downstream impact.",
+          "evidence": [
+            {
+              "kind": "graph",
+              "edgeId": "multi-hop",
+              "edgeType": "DEPENDS_ON",
+              "confidence": 0.85
+            }
+          ],
+          "confidence": 0.85
+        }
+      ],
+      "plans": [
+        {
+          "repoId": "auth-lib",
+          "requiredChanges": [
+            "Implement the requested change in package.json:1"
+          ],
+          "technicalApproach": "Modify the cited code paths to satisfy the request, keeping the public interface stable where possible.",
+          "sideEffects": [
+            "Downstream dependents may require coordinated updates (see dependency graph)."
+          ],
+          "testingRequirements": [
+            "Unit tests for the changed functions",
+            "Integration test covering the affected path"
+          ],
+          "migrationRequirements": [
+            "No data migration required (code-level change)."
+          ]
+        },
+        {
+          "repoId": "billing-svc",
+          "requiredChanges": [
+            "Review integration with the upstream change and update call sites if the contract changes."
+          ],
+          "technicalApproach": "Assess the upstream change's contract impact on this repo; adjust callers and types as needed.",
+          "sideEffects": [
+            "May be a no-op if the upstream change is backwards compatible."
+          ],
+          "testingRequirements": [
+            "Regression test the integration points that consume the upstream repo."
+          ],
+          "migrationRequirements": [
+            "None expected."
+          ]
+        },
+        {
+          "repoId": "web-app",
+          "requiredChanges": [
+            "Review integration with the upstream change and update call sites if the contract changes."
+          ],
+          "technicalApproach": "Assess the upstream change's contract impact on this repo; adjust callers and types as needed.",
+          "sideEffects": [
+            "May be a no-op if the upstream change is backwards compatible."
+          ],
+          "testingRequirements": [
+            "Regression test the integration points that consume the upstream repo."
+          ],
+          "migrationRequirements": [
+            "None expected."
+          ]
+        }
+      ],
+      "prs": [
+        {
+          "repoId": "auth-lib",
+          "title": "feat: implement jsonwebtoken in auth-lib",
+          "body": "This PR implements the repository-specific portion of the cross-repo intent:\n> jsonwebtoken\n\n### Rationale\nRelevant code for the request found in 1 location(s).\n\n### Required Changes\n- [x] Implement the requested change in package.json:1",
+          "diff": "--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,2 @@\n // TODO: implement jsonwebtoken\n+console.log(\"implemented\");"
+        },
+        {
+          "repoId": "billing-svc",
+          "title": "feat: implement jsonwebtoken in billing-svc",
+          "body": "This PR implements the repository-specific portion of the cross-repo intent:\n> jsonwebtoken\n\n### Rationale\nPulled into blast radius via auth-lib (transitive coupling); review for downstream impact.\n\n### Required Changes\n- [x] Review integration with the upstream change and update call sites if the contract changes.",
+          "diff": "--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,2 @@\n // TODO: implement jsonwebtoken\n+console.log(\"implemented\");"
+        },
+        {
+          "repoId": "web-app",
+          "title": "feat: implement jsonwebtoken in web-app",
+          "body": "This PR implements the repository-specific portion of the cross-repo intent:\n> jsonwebtoken\n\n### Rationale\nPulled into blast radius via auth-lib (transitive coupling); review for downstream impact.\n\n### Required Changes\n- [x] Review integration with the upstream change and update call sites if the contract changes.",
+          "diff": "--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,2 @@\n // TODO: implement jsonwebtoken\n+console.log(\"implemented\");"
+        }
+      ],
+      "createdAt": "2026-07-05T20:50:34.102Z"
+    }
+  },
+  "promptHistory": [
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T03:27:15.312Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T03:27:15.348Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T03:27:15.377Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T03:27:43.057Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T03:27:43.087Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T03:27:43.113Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T08:58:03.768Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T08:58:03.797Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T08:58:03.824Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T08:58:04.978Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T08:58:05.007Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T08:58:05.031Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T09:05:16.581Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T09:07:21.642Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T09:07:21.673Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T09:07:21.696Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T09:07:23.020Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T09:07:23.124Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T10:50:02.236Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T10:50:02.284Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T10:50:02.325Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T10:50:04.027Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T10:50:04.077Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T10:50:04.128Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T13:30:09.320Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T13:30:09.370Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T13:30:09.414Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T13:30:12.008Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T13:30:12.055Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T13:30:12.100Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:21:09.632Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:21:09.668Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:21:09.701Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:21:11.151Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:21:11.187Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:21:11.219Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:25:25.962Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:25:26.002Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:25:26.036Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:25:27.619Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:25:27.658Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:25:27.692Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:33:29.381Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:33:29.426Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:33:29.465Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:33:31.143Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:33:31.189Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T17:33:31.229Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:43:32.485Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:43:32.531Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:43:32.569Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:43:34.358Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:43:34.406Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:43:34.445Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:46:18.550Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:46:18.594Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T18:46:18.634Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:02:25.978Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:02:26.036Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:02:26.087Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:58:47.544Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:58:47.600Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:58:47.650Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:59:40.747Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:59:40.797Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T19:59:40.875Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T20:01:05.012Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T20:01:05.062Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T20:01:05.133Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T20:50:33.986Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T20:50:34.035Z"
+    },
+    {
+      "tenantId": "default",
+      "prompt": "jsonwebtoken",
+      "at": "2026-07-05T20:50:34.106Z"
+    }
+  ]
+}
