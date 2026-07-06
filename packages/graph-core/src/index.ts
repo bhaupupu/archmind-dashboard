@@ -7,8 +7,8 @@
  * carries `repoIds`, and traversals filter by the caller's visible repo set so a
  * user cannot enumerate structure of repos they cannot read in GitHub.
  */
-import type { EdgeType, NodeType, GraphEdge } from '../../shared-types/src/index.ts';
-import { assertSoftEdgeConfidence } from '../../shared-types/src/index.ts';
+import type { EdgeType, NodeType, GraphEdge } from '../../shared-types/src/index';
+import { assertSoftEdgeConfidence } from '../../shared-types/src/index';
 
 export interface GraphNode {
   id: string;

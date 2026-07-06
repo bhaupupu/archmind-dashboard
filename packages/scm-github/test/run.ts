@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { GitHubProvider } from '../src/index.ts';
+import { GitHubProvider } from '../src/index';
 import * as crypto from 'crypto';
 
 function testNormalizeWebhook() {

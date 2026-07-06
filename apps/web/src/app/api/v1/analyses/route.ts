@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
   const { repos, graph } = await buildGitHubGraph(id.githubToken, id.tenantId);
 
   let summary = `Analysis of prompt: ${prompt}\n\n`;
-  let affectedRepos: any[] = [];
-  let plans: any[] = [];
+  const affectedRepos: any[] = [];
+  const plans: any[] = [];
 
   if (GEMINI_API_KEY) {
     try {

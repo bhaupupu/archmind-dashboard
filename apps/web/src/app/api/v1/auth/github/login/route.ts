@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadConfig } from '../../../../../../../packages/config/src/index';
+import { loadConfig } from '../../../../../../../../../packages/config/src/index';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 

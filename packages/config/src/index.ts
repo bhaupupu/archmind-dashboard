@@ -47,4 +47,4 @@ export function requireProductionConfig(): AtlasConfig {
   req('DATABASE_URL'); req('ANTHROPIC_API_KEY'); req('VOYAGE_API_KEY'); req('GITHUB_APP_ID');
   return loadConfig();
 }
-export { cache } from './cache.ts';
+export { cache } from './cache';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadConfig } from '../../../../../../../packages/config/src/index';
+import { loadConfig } from '../../../../../../../../../packages/config/src/index';
 import * as jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-do-not-use-in-prod';
