@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadConfig } from '../../../../../../../../../packages/config/src/index';
 import * as jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-do-not-use-in-prod';
@@ -9,8 +8,9 @@ export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
   if (!code) return NextResponse.json({ error: 'missing_code' }, { status: 400 });
   
-  const cfg = loadConfig();
-  if (!cfg.github?.clientId || !cfg.github?.clientSecret) {
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
     return NextResponse.json({ error: 'github_not_configured' }, { status: 500 });
   }
   
@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        client_id: cfg.github.clientId,
-        client_secret: cfg.github.clientSecret,
+        client_id: clientId,
+        client_secret: clientSecret,
         code
       })
     });

@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { Graph } from '../../../../packages/graph-core/src/index';
+import { Graph } from './graph';
 
 const repoNodeId = (r: string) => `repo:${r}`;
 
