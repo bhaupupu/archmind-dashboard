@@ -1,0 +1,8 @@
+{
+  "name": "@atlas/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "description": "Environment configuration loader (docs §16). Dependency-free; validates and surfaces typed config."
+}

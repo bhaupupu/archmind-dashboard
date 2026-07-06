@@ -1,0 +1,37 @@
+{
+  "name": "atlas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Atlas — AI multi-repository engineering intelligence platform (monorepo)",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "index:spike": "node services/indexer-spike/src/index.ts",
+    "index:spike:fixture": "node services/indexer-spike/src/index.ts fixtures/sample-repo",
+    "org:index": "node services/indexer-spike/src/org-index.ts fixtures/sample-org",
+    "analyze": "node services/indexer-spike/src/analyze-cli.ts",
+    "api:dev": "node apps/api/src/server.ts",
+    "typecheck": "tsc -p tsconfig.base.json --noEmit",
+    "test:spike": "node services/indexer-spike/test/run.ts",
+    "test:org": "node services/indexer-spike/test/org.run.ts",
+    "test:retrieval": "node services/indexer-spike/test/retrieval.run.ts",
+    "test:analyze": "node services/indexer-spike/test/analyze.run.ts",
+    "test:agent": "node services/indexer-spike/test/agent.run.ts",
+    "test:apis": "node services/indexer-spike/test/api-extract.run.ts",
+    "test:env": "node services/indexer-spike/test/env-extract.run.ts",
+    "test:datastore": "node services/indexer-spike/test/datastore-extract.run.ts",
+    "test:graph": "node services/indexer-spike/test/fullgraph.run.ts",
+    "test:transitive": "node services/indexer-spike/test/transitive.run.ts",
+    "test:eval": "node services/indexer-spike/test/eval.run.ts",
+    "test:api": "node apps/api/test/api.run.ts",
+    "test": "node services/indexer-spike/test/run.ts && node services/indexer-spike/test/org.run.ts && node services/indexer-spike/test/retrieval.run.ts && node services/indexer-spike/test/analyze.run.ts && node services/indexer-spike/test/agent.run.ts && node services/indexer-spike/test/api-extract.run.ts && node services/indexer-spike/test/env-extract.run.ts && node services/indexer-spike/test/datastore-extract.run.ts && node services/indexer-spike/test/fullgraph.run.ts && node services/indexer-spike/test/transitive.run.ts && node services/indexer-spike/test/eval.run.ts && node apps/api/test/api.run.ts"
+  },
+  "//": "pnpm + Turborepo is the design target (docs/01 §4); npm workspaces is used for the Phase-0 bootstrap because pnpm is not installed on the current toolchain. Migrating to pnpm is a drop-in once available."
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@atlas/webhook-ingress",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Webhook ingress HTTP server (docs/04 §3.1). Validates HMAC, deduplicates, and pushes to SQS.",
+  "scripts": {
+    "start": "node src/index.ts",
+    "test": "node test/run.ts"
+  },
+  "dependencies": {
+    "@atlas/config": "*",
+    "@atlas/scm-github": "^0.1.0",
+    "@atlas/scm-provider": "*",
+    "@temporalio/client": "^1.19.0"
+  }
+}

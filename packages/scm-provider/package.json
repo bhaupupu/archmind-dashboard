@@ -1,0 +1,8 @@
+{
+  "name": "@atlas/scm-provider",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "description": "SCM provider abstraction (docs/01 §provider abstraction). Core imports only this interface; GitHub/GitLab/Bitbucket are adapter packages."
+}

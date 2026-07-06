@@ -1,0 +1,8 @@
+{
+  "name": "@atlas/agent-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/llm.ts" },
+  "description": "LLM client abstraction + model routing for the agent runtime (docs/05). Real Anthropic client when ANTHROPIC_API_KEY is set; deterministic mock otherwise so the pipeline runs and tests offline."
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@acme/web-app",
+  "version": "1.4.2",
+  "description": "Customer-facing web app.",
+  "type": "module",
+  "dependencies": {
+    "@acme/auth-lib": "^2.0.0",
+    "express": "^4.18.0",
+    "react": "^18.2.0"
+  }
+}

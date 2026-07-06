@@ -1,0 +1,96 @@
+openapi: 3.0.3
+info:
+  title: Atlas API
+  version: 1.0.0
+  description: Enterprise API for Atlas Engineering Intelligence Platform. Used for programmatic access to impact analysis and autonomous workflow triggering in CI/CD pipelines.
+servers:
+  - url: https://api.atlas.com/v1
+    description: Production Server
+  - url: http://localhost:3001/v1
+    description: Local Development Server
+
+paths:
+  /repos:
+    get:
+      summary: List accessible repositories
+      description: Returns a list of repositories the authenticated user has access to.
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: A list of repositories.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repos:
+                    type: array
+                    items:
+                      type: string
+
+  /analyses:
+    post:
+      summary: Start an impact analysis
+      description: Initiates a cross-repo impact analysis for a given natural language prompt. Requires member or admin roles.
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  description: The change request prompt.
+                org:
+                  type: string
+                  description: The target organization context.
+                mode:
+                  type: string
+                  enum: [advisory, agent]
+                  description: Execution mode.
+      responses:
+        '201':
+          description: Analysis started successfully.
+
+  /autonomous/pr:
+    post:
+      summary: Trigger Autonomous PR
+      description: Kicks off a background agent to generate code changes and open a pull request. Requires admin role.
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - analysisId
+                - repoId
+              properties:
+                analysisId:
+                  type: string
+                repoId:
+                  type: string
+      responses:
+        '200':
+          description: PR generation started.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: atlas_session

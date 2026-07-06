@@ -1,0 +1,10 @@
+{
+  "name": "@atlas/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "description": "Shared DTOs and schema contracts for Atlas (evidence, findings, chunks, impact reports, change plans)."
+}

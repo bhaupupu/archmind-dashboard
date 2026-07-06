@@ -1,0 +1,19 @@
+{
+  "name": "@atlas/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Atlas core API (docs/01 §5). Phase-0 stand-in built on Node's http module (zero-install, runnable now); production migrates to NestJS with the same REST + SSE surface.",
+  "scripts": {
+    "start": "node src/server.ts",
+    "test": "node test/api.run.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "@temporalio/client": "^1.19.0",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@atlas/scm-gitlab",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@atlas/scm-provider": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}

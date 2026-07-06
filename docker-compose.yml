@@ -1,0 +1,61 @@
+# Atlas local development infrastructure (PROJECT_HANDOFF §8 task 2).
+# Not runnable on the current machine (Docker not installed) — this is the spec
+# the next engineer brings up once Docker is available:  docker compose up -d
+#
+# The Phase-0 ingestion spike does NOT need any of this; it runs on plain Node.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: atlas
+      POSTGRES_DB: atlas
+    ports: ["5432:5432"]
+    volumes:
+      - pg:/var/lib/postgresql/data
+      - ./infra/migrations:/docker-entrypoint-initdb.d:ro
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports: ["6333:6333", "6334:6334"]
+    volumes: ["qdrant:/qdrant/storage"]
+
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/atlas-dev
+    ports: ["7474:7474", "7687:7687"]
+    volumes: ["neo4j:/data"]
+
+  temporal:
+    image: temporalio/auto-setup:latest
+    depends_on: [postgres]
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: atlas
+      POSTGRES_PWD: atlas
+      POSTGRES_SEEDS: postgres
+    ports: ["7233:7233"]
+
+  temporal-ui:
+    image: temporalio/ui:latest
+    depends_on: [temporal]
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    ports: ["8080:8080"]
+
+  localstack:
+    image: localstack/localstack:latest
+    environment:
+      SERVICES: s3,sqs,kms
+    ports: ["4566:4566"]
+
+volumes:
+  pg:
+  qdrant:
+  neo4j:
