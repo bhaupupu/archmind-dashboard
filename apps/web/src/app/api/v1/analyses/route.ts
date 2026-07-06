@@ -3,7 +3,7 @@ import { requireRole } from '../auth';
 import { buildGitHubGraph } from '../../../../lib/github-graph';
 import crypto from 'crypto';
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
   const id = requireRole(req, ['member', 'admin']);
@@ -17,39 +17,32 @@ export async function POST(req: NextRequest) {
   const prompt = (body.prompt ?? '').trim();
   if (!prompt) return NextResponse.json({ error: 'prompt_required' }, { status: 400 });
 
-  // Stream not fully supported in this minimal cloud migration yet
   const wantsStream = req.headers.get('accept')?.includes('text/event-stream');
 
-  // Fetch real github org data
   const { repos, graph } = await buildGitHubGraph(id.githubToken, id.tenantId);
 
   let summary = `Analysis of prompt: ${prompt}\n\n`;
   let affectedRepos: any[] = [];
   let plans: any[] = [];
 
-  if (ANTHROPIC_API_KEY) {
-    // Real Anthropic LLM call for real analysis over their real repos
+  if (GEMINI_API_KEY) {
     try {
-      const llmRes = await fetch('https://api.anthropic.com/v1/messages', {
+      const llmRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20240620',
-          max_tokens: 1024,
-          messages: [{
-            role: 'user', 
-            content: `Analyze the architectural impact of this request: "${prompt}". 
-            The organization has these repositories: ${repos.join(', ')}.
-            Respond in a concise summary of which repos need to change.`
+          contents: [{
+            parts: [{
+              text: `Analyze the architectural impact of this request: "${prompt}". \nThe organization has these repositories: ${repos.join(', ')}.\nRespond in a concise summary of which repos need to change.`
+            }]
           }]
         })
       });
       const data = await llmRes.json();
-      summary = data.content?.[0]?.text || summary;
+      summary = data.candidates?.[0]?.content?.parts?.[0]?.text || summary;
+
       
       // Select 1 or 2 repos arbitrarily for the UI since we don't have full AST search
       if (repos.length > 0) {
@@ -65,11 +58,10 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (e) {
-      summary = 'Anthropic API error occurred.';
+      summary = 'Gemini API error occurred.';
     }
   } else {
-    // Deterministic fallback using REAL repos
-    summary = `Cloud Analysis: Simulated execution for "${prompt}". Please configure ANTHROPIC_API_KEY for deep LLM analysis. Found ${repos.length} repositories.`;
+    summary = `Cloud Analysis: Simulated execution for "${prompt}". Please configure GEMINI_API_KEY for deep LLM analysis. Found ${repos.length} repositories.`;
     if (repos.length > 0) {
       affectedRepos.push({
         repoId: repos[0],
