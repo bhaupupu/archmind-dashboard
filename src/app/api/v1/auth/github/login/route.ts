@@ -6,9 +6,13 @@ import { getEnv } from '@/lib/env';
 const GITHUB_OAUTH_SCOPE = 'repo';
 
 export async function GET(req: NextRequest) {
-  const { GITHUB_CLIENT_ID, BASE_URL } = getEnv();
-  const redirectUri = encodeURIComponent(`${BASE_URL}/api/v1/auth/github/callback`);
-  const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=${GITHUB_OAUTH_SCOPE}`;
+  try {
+    const { GITHUB_CLIENT_ID, BASE_URL } = getEnv();
+    const redirectUri = encodeURIComponent(`${BASE_URL}/api/v1/auth/github/callback`);
+    const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=${GITHUB_OAUTH_SCOPE}`;
 
-  return NextResponse.redirect(url, 302);
+    return NextResponse.redirect(url, 302);
+  } catch (err) {
+    return NextResponse.json({ error: 'config_error', message: (err as Error).message }, { status: 500 });
+  }
 }

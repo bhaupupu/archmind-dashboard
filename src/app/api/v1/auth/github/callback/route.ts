@@ -6,11 +6,11 @@ import { getEnv } from '@/lib/env';
 
 
 export async function GET(req: NextRequest) {
-  const { JWT_SECRET, BASE_URL, GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = getEnv();
   const code = req.nextUrl.searchParams.get('code');
   if (!code) return NextResponse.json({ error: 'missing_code' }, { status: 400 });
 
   try {
+    const { JWT_SECRET, BASE_URL, GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = getEnv();
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
