@@ -1,20 +1,43 @@
 import { Button } from "@/components/ui/button"
-import { Box, GitPullRequest } from "lucide-react"
+import { Box, GitPullRequest, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 
-export default function LoginPage() {
+// Machine-readable codes set by the OAuth callback's error redirects.
+const LOGIN_ERRORS: Record<string, string> = {
+  missing_code: "GitHub didn't return an authorization code. Please try signing in again.",
+  state_mismatch: "The sign-in request could not be verified (possible expired session). Please try again.",
+  oauth_failed: "GitHub rejected the sign-in attempt. Please try again.",
+  github_user_failed: "We couldn't read your GitHub profile. Please try again in a moment.",
+  internal_error: "Something went wrong on our side during sign-in. Please try again.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const errorMessage = error ? (LOGIN_ERRORS[error] ?? LOGIN_ERRORS.internal_error) : null;
+
   return (
     <div className="min-h-screen bg-[#0B1120] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-surface border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center">
-        
+
         <div className="w-16 h-16 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
           <Box className="w-8 h-8 text-blue-500" />
         </div>
-        
+
         <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Welcome to Archmind</h1>
         <p className="text-muted-foreground text-sm mb-8">
           The autonomous architecture intelligence platform. Connect your GitHub account to get started.
         </p>
+
+        {errorMessage && (
+          <div className="w-full mb-6 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-left text-sm text-red-300">
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            {errorMessage}
+          </div>
+        )}
 
         <a href="/api/v1/auth/github/login" className="w-full">
           <Button className="w-full bg-white hover:bg-neutral-200 text-black font-semibold h-12 gap-3 text-base">

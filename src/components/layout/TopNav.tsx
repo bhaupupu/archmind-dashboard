@@ -9,9 +9,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, Bell, Settings, LogOut, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function TopNav() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  };
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -99,12 +110,13 @@ export function TopNav() {
                 </Link>
               </DropdownMenuGroup>
               <DropdownMenuSeparator className="bg-white/10" />
-              <Link href="/api/v1/auth/logout">
-                <DropdownMenuItem className="focus:bg-red-500/20 focus:text-red-400 cursor-pointer text-red-400">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </Link>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="focus:bg-red-500/20 focus:text-red-400 cursor-pointer text-red-400"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

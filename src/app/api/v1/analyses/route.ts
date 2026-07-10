@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireRole } from '../auth';
 import { buildGitHubGraph } from '../../../../lib/github-graph';
 import prisma from '../../../../lib/db';
@@ -6,7 +7,11 @@ import crypto from 'crypto';
 import { decrypt } from '@/lib/encryption';
 import { getEnv } from '@/lib/env';
 import { makeRateLimiter, checkRateLimit } from '@/lib/ratelimit';
+import { readJsonBody } from '@/lib/request';
 import { Octokit } from '@octokit/rest';
+
+// Caps what we forward into paid Gemini calls; real change requests fit well within this.
+const MAX_PROMPT_LENGTH = 4000;
 
 // Allow up to ~5min for larger orgs; indexing is still synchronous (see github-graph.ts).
 export const maxDuration = 300;
@@ -32,20 +37,52 @@ export async function POST(req: NextRequest) {
   if (!user || !user.githubToken) {
     return NextResponse.json({ error: 'github_token_missing' }, { status: 400 });
   }
-  const githubToken = decrypt(user.githubToken);
-  const geminiKey = user.geminiKey ? decrypt(user.geminiKey) : GEMINI_API_KEY;
+  let githubToken: string;
+  try {
+    githubToken = decrypt(user.githubToken);
+  } catch (err) {
+    console.error('[analyses] stored GitHub token undecryptable (rotated ENCRYPTION_KEY?)', err);
+    return NextResponse.json(
+      { error: 'github_token_unreadable', message: 'Stored GitHub credentials could not be read. Please sign in again.' },
+      { status: 500 }
+    );
+  }
+  let geminiKey = GEMINI_API_KEY;
+  if (user.geminiKey) {
+    try {
+      geminiKey = decrypt(user.geminiKey);
+    } catch (err) {
+      console.error('[analyses] stored gemini key undecryptable, using server fallback', err);
+    }
+  }
 
-  const body = await req.json();
-  const prompt = (body.prompt ?? '').trim();
-  if (!prompt) return NextResponse.json({ error: 'prompt_required' }, { status: 400 });
+  const body = await readJsonBody(req);
+  const parsedBody = z
+    .object({ prompt: z.string().trim().min(1).max(MAX_PROMPT_LENGTH) })
+    .safeParse(body);
+  if (!parsedBody.success) {
+    return NextResponse.json(
+      { error: 'prompt_required', message: `prompt must be a non-empty string of at most ${MAX_PROMPT_LENGTH} characters` },
+      { status: 400 }
+    );
+  }
+  const prompt = parsedBody.data.prompt;
 
   const wantsStream = req.headers.get('accept')?.includes('text/event-stream');
 
-  const { repos, graph } = await buildGitHubGraph(githubToken, id.tenantId);
+  let repos: string[];
+  let graph;
+  try {
+    ({ repos, graph } = await buildGitHubGraph(githubToken, id.tenantId));
+  } catch (err) {
+    console.error('[analyses] failed to build repository graph', err);
+    return NextResponse.json({ error: 'github_api_error' }, { status: 502 });
+  }
 
   let summary = `Analysis of prompt: ${prompt}\n\n`;
   let affectedRepos: any[] = [];
   let plans: any[] = [];
+  let analysisFailed = false;
 
   const edges = graph.allEdges().map(e => `${e.srcId.replace('repo:', '')} depends on ${e.dstId.replace('repo:', '')}`);
   const architectureContext = `Organization Repositories: ${repos.join(', ')}\nCross-Repository Dependencies:\n${edges.length > 0 ? edges.join('\n') : 'None found.'}`;
@@ -136,15 +173,32 @@ export async function POST(req: NextRequest) {
       });
       const data = await llmRes.json();
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (rawText) {
-        const parsed = JSON.parse(rawText);
-        summary = parsed.summary || summary;
-        affectedRepos = parsed.affectedRepos || [];
-        plans = parsed.plans || [];
-      }
+      if (!rawText) throw new Error('empty Gemini response');
+      const parsed = JSON.parse(rawText);
+      // Validate the LLM's shape before persisting/returning: a malformed entry
+      // (missing repoId/disposition) would crash the results UI on dereference.
+      const validated = z
+        .object({
+          summary: z.string().optional(),
+          affectedRepos: z
+            .array(z.object({
+              repoId: z.string(),
+              disposition: z.enum(['must_change', 'may_change']),
+              rationale: z.string().optional(),
+            }))
+            .optional(),
+          plans: z
+            .array(z.object({ repoId: z.string(), steps: z.array(z.string()) }))
+            .optional(),
+        })
+        .parse(parsed);
+      summary = validated.summary || summary;
+      affectedRepos = validated.affectedRepos || [];
+      plans = validated.plans || [];
     } catch (e) {
-      summary = 'Gemini API error occurred or failed to parse response.';
-      console.error(e);
+      summary = 'The AI provider returned an error or an unusable response. This analysis did not complete — please try again.';
+      analysisFailed = true;
+      console.error('[analyses] LLM analysis failed', e);
     }
   } else {
     summary = `Cloud Analysis: Simulated execution for "${prompt}". Please configure GEMINI_API_KEY for deep LLM analysis. Found ${repos.length} repositories.`;
@@ -171,21 +225,28 @@ export async function POST(req: NextRequest) {
     tenantId: id.tenantId,
     prompt,
     timestamp: new Date().toISOString(),
-    status: 'completed',
+    // 'failed' lets the client distinguish a provider error from a real result
+    // instead of rendering an empty report as success.
+    status: analysisFailed ? 'failed' : 'completed',
     affectedRepos,
     plans,
     summary,
   };
 
-  // Persist to database
-  await prisma.analysis.create({
-    data: {
-      id: report.id,
-      prompt: report.prompt,
-      result: JSON.stringify(report),
-      userId: id.tenantId
-    }
-  });
+  // Persist to database (failed runs too — they're part of history)
+  try {
+    await prisma.analysis.create({
+      data: {
+        id: report.id,
+        prompt: report.prompt,
+        result: JSON.stringify(report),
+        userId: id.tenantId
+      }
+    });
+  } catch (err) {
+    console.error('[analyses] failed to persist analysis', err);
+    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
+  }
 
   if (wantsStream) {
     const encoder = new TextEncoder();

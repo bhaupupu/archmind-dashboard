@@ -1,16 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import * as jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import prisma from '@/lib/db';
 import { Octokit } from '@octokit/rest';
 import { decrypt } from '@/lib/encryption';
 import { getEnv } from '@/lib/env';
 import { makeRateLimiter, checkRateLimit } from '@/lib/ratelimit';
+import { readJsonBody } from '@/lib/request';
 
 export const maxDuration = 60;
 
 
 const ratelimit = makeRateLimiter(10, '10 s');
+
+// Caps octokit.paginate: 10 pages × 100 = 1000 repos. Users in very large orgs
+// would otherwise trigger dozens of sequential GitHub calls per request.
+const MAX_REPO_PAGES = 10;
+
+async function listUserRepos(octokit: Octokit) {
+  let pages = 0;
+  const repos = await octokit.paginate(
+    octokit.rest.repos.listForAuthenticatedUser,
+    { sort: 'updated', per_page: 100 },
+    (response, done) => {
+      if (++pages >= MAX_REPO_PAGES) {
+        console.warn(`[onboarding] repo list truncated at ${MAX_REPO_PAGES * 100} repos`);
+        done();
+      }
+      return response.data;
+    }
+  );
+  return repos;
+}
 
 async function getSession() {
   const { JWT_SECRET } = getEnv();
@@ -37,13 +59,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const octokit = new Octokit({ auth: session.gh_token });
-    
-    // Fetch repositories user has access to (paginated)
-    const reposResponse = await octokit.paginate(octokit.rest.repos.listForAuthenticatedUser, {
-      sort: 'updated',
-      per_page: 100
-    });
-    
+
+    // Fetch repositories user has access to (paginated, capped)
+    const reposResponse = await listUserRepos(octokit);
+
     const repos = reposResponse.map((r: any) => ({
       id: r.id,
       name: r.name,
@@ -68,39 +87,42 @@ export async function POST(req: NextRequest) {
   const limit = await checkRateLimit(ratelimit, session.sub);
   if (!limit.ok) return NextResponse.json({ error: 'rate_limit_exceeded' }, { status: 429 });
 
-  try {
-    const { repositories } = await req.json() as { repositories: any[] };
-    if (!Array.isArray(repositories) || repositories.length === 0) {
-      return NextResponse.json({ error: 'Invalid repositories payload' }, { status: 400 });
-    }
+  const body = await readJsonBody(req);
+  // Only ids are taken from the client; all metadata comes from GitHub below.
+  const parsedBody = z
+    .object({ repositories: z.array(z.object({ id: z.number().int() }).loose()).min(1).max(1000) })
+    .safeParse(body);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'Invalid repositories payload' }, { status: 400 });
+  }
 
+  try {
     const octokit = new Octokit({ auth: session.gh_token });
-    
-    // Fetch all user repos to validate incoming IDs (IDOR protection)
-    const validRepos = await octokit.paginate(octokit.rest.repos.listForAuthenticatedUser, {
-      per_page: 100
-    });
-    const validRepoIds = new Set(validRepos.map((r: any) => r.id));
+
+    // Fetch all user repos to validate incoming IDs (IDOR protection) and to
+    // source trusted metadata — never persist client-supplied name/owner.
+    const validRepos = await listUserRepos(octokit);
+    const validById = new Map<number, any>(validRepos.map((r: any) => [r.id, r]));
 
     const savedRepos = [];
-    
+
     // Upsert selected repositories into the database
-    for (const repo of repositories) {
-      if (!validRepoIds.has(repo.id)) {
+    for (const repo of parsedBody.data.repositories) {
+      const ghRepo = validById.get(repo.id);
+      if (!ghRepo) {
         continue; // Skip unauthorized repos
       }
+      const metadata = {
+        name: ghRepo.name,
+        fullName: ghRepo.full_name,
+        owner: ghRepo.owner.login,
+      };
       const saved = await prisma.repository.upsert({
         where: { githubId_userId: { githubId: repo.id, userId: session.sub } },
-        update: {
-          name: repo.name,
-          fullName: repo.fullName,
-          owner: repo.owner,
-        },
+        update: metadata,
         create: {
           githubId: repo.id,
-          name: repo.name,
-          fullName: repo.fullName,
-          owner: repo.owner,
+          ...metadata,
           userId: session.sub
         }
       });

@@ -23,7 +23,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'github_token_missing' }, { status: 400 });
   }
 
-  const githubToken = decrypt(user.githubToken);
+  let githubToken: string;
+  try {
+    githubToken = decrypt(user.githubToken);
+  } catch (err) {
+    console.error('[full-graph] stored GitHub token undecryptable (rotated ENCRYPTION_KEY?)', err);
+    return NextResponse.json(
+      { error: 'github_token_unreadable', message: 'Stored GitHub credentials could not be read. Please sign in again.' },
+      { status: 500 }
+    );
+  }
 
   const analysisId = req.nextUrl.searchParams.get('analysisId');
   const focalNode = req.nextUrl.searchParams.get('focalNode');

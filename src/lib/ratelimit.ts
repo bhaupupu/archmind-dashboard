@@ -28,6 +28,13 @@ export function makeRateLimiter(requests: number, window: `${number} ${'ms' | 's
 
 export async function checkRateLimit(limiter: Ratelimit | null, key: string): Promise<{ ok: true } | { ok: false }> {
   if (!limiter) return { ok: true };
-  const { success } = await limiter.limit(key);
-  return success ? { ok: true } : { ok: false };
+  try {
+    const { success } = await limiter.limit(key);
+    return success ? { ok: true } : { ok: false };
+  } catch (err) {
+    // Fail open: a Redis outage must not turn every guarded route into a 500.
+    // Losing rate limiting during the outage is the lesser failure mode.
+    console.error('[atlas] rate-limit check failed (Redis unreachable?) — failing open', err);
+    return { ok: true };
+  }
 }

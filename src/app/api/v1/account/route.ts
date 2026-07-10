@@ -40,8 +40,18 @@ export async function DELETE(req: NextRequest) {
     }
   }
 
-  // Cascades to Repository and Analysis rows via onDelete: Cascade (prisma/schema.prisma).
-  await prisma.user.delete({ where: { id: id.tenantId } }).catch(() => {});
+  // Cascades to Repository, Analysis, and PullRequest rows via onDelete: Cascade.
+  // A failed delete must NOT report success: the user would be logged out
+  // believing their data (including the encrypted GitHub token) was erased.
+  try {
+    await prisma.user.delete({ where: { id: id.tenantId } });
+  } catch (err) {
+    console.error('[account] deletion failed', err);
+    return NextResponse.json(
+      { error: 'deletion_failed', message: 'Your account could not be deleted. Please try again.' },
+      { status: 500 }
+    );
+  }
 
   const res = NextResponse.json({ success: true });
   res.cookies.set('atlas_session', '', { path: '/', maxAge: 0 });

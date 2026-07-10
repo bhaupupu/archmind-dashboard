@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
-  // Create a response that redirects to the landing page
-  const res = NextResponse.redirect(new URL('/', req.url));
-  
+// Logout is a POST: a GET logout is triggerable cross-site via <img src> and by
+// link prefetchers (Next's <Link> prefetch would sign users out on hover).
+export async function POST(req: NextRequest) {
+  const res = NextResponse.json({ success: true });
+
   // Clear the atlas_session cookie
   res.cookies.set('atlas_session', '', {
     path: '/',

@@ -13,12 +13,20 @@ export async function GET(req: NextRequest) {
       take: 50,
     });
 
-    const formattedHistory = history.map((item) => ({
-      id: item.id,
-      prompt: item.prompt,
-      createdAt: item.createdAt,
-      result: JSON.parse(item.result),
-    }));
+    // One corrupt row must not take down the whole history endpoint — skip it.
+    const formattedHistory = history.flatMap((item) => {
+      try {
+        return [{
+          id: item.id,
+          prompt: item.prompt,
+          createdAt: item.createdAt,
+          result: JSON.parse(item.result),
+        }];
+      } catch {
+        console.error(`[analyses/history] skipping corrupt analysis row ${item.id}`);
+        return [];
+      }
+    });
 
     return NextResponse.json({ history: formattedHistory });
   } catch (error) {

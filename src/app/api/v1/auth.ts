@@ -9,33 +9,39 @@ export interface Identity {
   role: string;
 }
 
+// Session tokens are always HMAC-signed; pinning prevents algorithm-confusion
+// tricks if key material ever changes shape.
+const JWT_ALGORITHMS: jwt.Algorithm[] = ['HS256'];
+
+function verifyToken(token: string, secret: string): Identity | null {
+  try {
+    const decoded = jwt.verify(token, secret, { algorithms: JWT_ALGORITHMS }) as jwt.JwtPayload;
+    // A signed token without a subject is not a usable identity — reject it here
+    // so downstream queries never run with `where: { id: undefined }`.
+    if (typeof decoded.sub !== 'string' || decoded.sub.length === 0) return null;
+    return {
+      tenantId: decoded.sub,
+      userId: decoded.user_id || decoded.sub,
+      role: decoded.role || 'viewer'
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function getIdentity(req: NextRequest): Identity | null {
   const { JWT_SECRET } = getEnv();
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      return {
-        tenantId: decoded.sub,
-        userId: decoded.user_id || decoded.sub,
-        role: decoded.role || 'viewer'
-      };
-    } catch {}
+    const identity = verifyToken(authHeader.substring(7), JWT_SECRET);
+    if (identity) return identity;
   }
 
   const cookieHeader = req.headers.get('cookie');
   if (cookieHeader) {
     const match = cookieHeader.match(/atlas_session=([^;]+)/);
     if (match) {
-      try {
-        const decoded = jwt.verify(match[1]!, JWT_SECRET) as any;
-        return {
-          tenantId: decoded.sub,
-          userId: decoded.user_id || decoded.sub,
-          role: decoded.role || 'viewer'
-        };
-      } catch {}
+      return verifyToken(match[1]!, JWT_SECRET);
     }
   }
 
