@@ -42,6 +42,17 @@ export function getIdentity(req: NextRequest): Identity | null {
   return null;
 }
 
+/**
+ * Signs the session JWT issued at OAuth callback. Single-user tenancy: the
+ * account owner has full rights over their own data, so the token must carry
+ * role 'admin' — without it getIdentity defaults to 'viewer' and every write
+ * route (analyses POST, pull-requests POST) returns 403.
+ */
+export function signSessionToken(payload: { sub: string; username: string }): string {
+  const { JWT_SECRET } = getEnv();
+  return jwt.sign({ ...payload, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+}
+
 export function requireRole(req: NextRequest, allowedRoles: string[]): Identity | NextResponse {
   const id = getIdentity(req);
   if (!id) {

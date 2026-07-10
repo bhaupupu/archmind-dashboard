@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as jwt from 'jsonwebtoken';
 import prisma from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
 import { getEnv } from '@/lib/env';
+import { signSessionToken } from '../../../auth';
 
 
 export async function GET(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (!code) return NextResponse.json({ error: 'missing_code' }, { status: 400 });
 
   try {
-    const { JWT_SECRET, BASE_URL, GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = getEnv();
+    const { BASE_URL, GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = getEnv();
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -53,11 +53,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const token = jwt.sign(
-      { sub: user.id, username: userData.login },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = signSessionToken({ sub: user.id, username: userData.login });
     
     const res = NextResponse.redirect(new URL('/onboarding', BASE_URL), 302);
     res.cookies.set('atlas_session', token, {

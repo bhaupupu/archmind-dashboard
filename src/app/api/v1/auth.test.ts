@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { NextRequest } from 'next/server';
 import * as jwt from 'jsonwebtoken';
-import { getIdentity, requireRole } from './auth';
+import { getIdentity, requireRole, signSessionToken } from './auth';
 
 const JWT_SECRET = 'test-jwt-secret-do-not-use-in-prod'; // must match vitest.config.ts test.env
 
@@ -53,6 +53,24 @@ describe('getIdentity', () => {
   it('defaults role to viewer when the token omits it', () => {
     const token = jwt.sign({ sub: 'user-3' }, JWT_SECRET);
     expect(getIdentity(reqWithBearer(token))?.role).toBe('viewer');
+  });
+});
+
+describe('signSessionToken', () => {
+  // Regression: tokens were once issued without a role claim, so getIdentity
+  // defaulted everyone to 'viewer' and all write routes (analyses POST,
+  // pull-requests POST) returned 403 for every real user.
+  it('issues a token that passes the write-route role check', () => {
+    const token = signSessionToken({ sub: 'user-1', username: 'octocat' });
+    const result = requireRole(reqWithCookie(token), ['member', 'admin']);
+    expect(result).toEqual({ tenantId: 'user-1', userId: 'user-1', role: 'admin' });
+  });
+
+  it('issues a token that expires', () => {
+    const token = signSessionToken({ sub: 'user-1', username: 'octocat' });
+    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    expect(decoded.exp).toBeDefined();
+    expect(decoded.exp! * 1000).toBeGreaterThan(Date.now());
   });
 });
 

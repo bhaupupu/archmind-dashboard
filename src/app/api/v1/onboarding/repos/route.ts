@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         continue; // Skip unauthorized repos
       }
       const saved = await prisma.repository.upsert({
-        where: { githubId: repo.id },
+        where: { githubId_userId: { githubId: repo.id, userId: session.sub } },
         update: {
           name: repo.name,
           fullName: repo.fullName,

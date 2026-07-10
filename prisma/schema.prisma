@@ -23,7 +23,7 @@ model User {
 
 model Repository {
   id            String   @id @default(uuid())
-  githubId      Int      @unique
+  githubId      Int
   name          String
   fullName      String
   owner         String
@@ -33,6 +33,10 @@ model Repository {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  // Per-tenant uniqueness: two users can both select the same GitHub repo.
+  @@unique([githubId, userId])
+  @@index([userId])
 }
 
 model Analysis {
@@ -44,6 +48,8 @@ model Analysis {
   createdAt DateTime @default(now())
 
   pullRequests PullRequest[]
+
+  @@index([userId])
 }
 
 // A drafted PR description (title/body/checklist) generated from an analysis.
@@ -60,4 +66,7 @@ model PullRequest {
   analysisId String
   analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([analysisId])
 }
