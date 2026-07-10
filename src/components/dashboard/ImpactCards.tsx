@@ -1,9 +1,55 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Clock, Code2 } from "lucide-react";
+import { AlertTriangle, Clock, Code2, GitPullRequest, Check, Loader2 } from "lucide-react";
+import Link from "next/link";
+
+function GeneratePRButton({ analysisId, repoId }: { analysisId: string; repoId: string }) {
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
+
+  const handleClick = async () => {
+    setState("loading");
+    try {
+      const res = await fetch("/api/v1/pull-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysisId, repoId }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setState("done");
+    } catch (err) {
+      console.error("Failed to generate PR draft", err);
+      setState("error");
+    }
+  };
+
+  if (state === "done") {
+    return (
+      <Link href="/pull-requests">
+        <Button size="sm" variant="outline" className="w-full gap-2 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10">
+          <Check className="w-3.5 h-3.5" /> Draft ready — view
+        </Button>
+      </Link>
+    );
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="w-full gap-2 border-white/10 text-muted-foreground hover:text-white"
+      disabled={state === "loading"}
+      onClick={handleClick}
+    >
+      {state === "loading" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <GitPullRequest className="w-3.5 h-3.5" />}
+      {state === "error" ? "Failed — retry" : "Generate PR draft"}
+    </Button>
+  );
+}
 
 export function ImpactCards({ report, filter, search }: { report: any; filter: string; search: string }) {
   if (!report) {
@@ -93,7 +139,7 @@ export function ImpactCards({ report, filter, search }: { report: any; filter: s
               </div>
 
               {finding.evidence && finding.evidence.length > 0 && (
-                <div className="mt-auto pt-4 border-t border-white/5">
+                <div className="pt-4 border-t border-white/5">
                   <span className="text-xs font-semibold uppercase text-zinc-500 flex items-center gap-1 mb-2">
                     <Code2 className="w-3 h-3" /> Evidence
                   </span>
@@ -110,6 +156,12 @@ export function ImpactCards({ report, filter, search }: { report: any; filter: s
                       ))}
                     </ul>
                   </ScrollArea>
+                </div>
+              )}
+
+              {report.id && (
+                <div className="mt-auto pt-3">
+                  <GeneratePRButton analysisId={report.id} repoId={finding.repoId} />
                 </div>
               )}
             </CardContent>

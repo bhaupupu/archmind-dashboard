@@ -15,9 +15,10 @@ model User {
   geminiKey   String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  
-  repositories Repository[]
-  analyses     Analysis[]
+
+  repositories  Repository[]
+  analyses      Analysis[]
+  pullRequests  PullRequest[]
 }
 
 model Repository {
@@ -41,4 +42,22 @@ model Analysis {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  pullRequests PullRequest[]
+}
+
+// A drafted PR description (title/body/checklist) generated from an analysis.
+// Advisory-mode only: no branch/commit/PR is created on GitHub from this record.
+model PullRequest {
+  id         String   @id @default(uuid())
+  repoId     String   // matches affectedRepos[].repoId from the source analysis
+  title      String
+  body       String
+  checklist  String[] @default([])
+  status     String   @default("draft") // draft | dismissed
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysisId String
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 }
