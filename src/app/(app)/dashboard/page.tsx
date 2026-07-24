@@ -21,6 +21,16 @@ export default function DashboardPage() {
   const [analysisCount, setAnalysisCount] = useState(0);
   const [resultsSearch, setResultsSearch] = useState("");
   const [resultsFilter, setResultsFilter] = useState("all");
+  const [username, setUsername] = useState<string>("");
+
+  useEffect(() => {
+    fetch('/api/v1/account')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.username) setUsername(data.username);
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     fetch('/api/v1/full-graph')
@@ -80,10 +90,12 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight">Payment Platform</h1>
+              <h1 className="text-2xl font-bold tracking-tight">
+                {username ? `@${username}'s Workspace` : 'Overview'}
+              </h1>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20 flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Healthy
+                Active
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">Real-time engineering intelligence for your entire codebase</p>
@@ -106,7 +118,7 @@ export default function DashboardPage() {
                   <div>
                     <DialogTitle>Run Impact Analysis</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Describe a feature request or bug fix. Archmind will map out the architectural impact across all services.
+                      Describe a feature request or bug fix. Syntrix will map out the architectural impact across all services.
                     </DialogDescription>
                   </div>
                   {report && !analyzing && (

@@ -1,19 +1,37 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Box, Database, Share2, Activity, GitBranch, GitPullRequest,
   Bot, ShieldAlert, Lightbulb, LineChart, Settings,
-  PlusCircle
+  PlusCircle, FolderGit2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
+type Repo = {
+  id: string;
+  name: string;
+  fullName: string;
+};
+
 export function Sidebar() {
   const pathname = usePathname();
+  const [repos, setRepos] = useState<Repo[]>([]);
+
+  useEffect(() => {
+    fetch("/api/v1/repos")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.repos) {
+          setRepos(data.repos);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const navItems = [
     { name: "Overview", icon: Box, href: "/" },
@@ -31,10 +49,10 @@ export function Sidebar() {
   return (
     <div className="w-[260px] border-r border-border bg-sidebar flex flex-col h-screen overflow-hidden shrink-0">
       <div className="p-5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded bg-blue-500 flex items-center justify-center">
-          <Box className="w-5 h-5 text-white" />
+        <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+          S
         </div>
-        <span className="font-bold text-lg tracking-wide text-foreground">ARCHMIND</span>
+        <span className="font-bold text-lg tracking-wide text-foreground">SYNTRIX</span>
       </div>
 
       <ScrollArea className="flex-1 px-3">
@@ -59,33 +77,29 @@ export function Sidebar() {
           })}
         </div>
 
-
         <div className="mb-4">
-          <h3 className="px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recent Projects</h3>
+          <h3 className="px-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Imported Repositories</h3>
           <div className="space-y-1">
-            <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
-              <span className="w-5 h-5 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold">P</span>
-              Payment Platform
-            </Button>
-            <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
-              <span className="w-5 h-5 rounded bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold">I</span>
-              Identity Service
-            </Button>
-            <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
-              <span className="w-5 h-5 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">A</span>
-              Analytics Platform
-            </Button>
-            <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
-              <span className="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">M</span>
-              Marketing Site
-            </Button>
-            <Button variant="ghost" className="w-full justify-start gap-3 text-muted-blue hover:text-foreground hover:bg-white/5">
-              <span className="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">M</span>
-              Mobile App
-            </Button>
-            <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-white/5 text-xs mt-2">
-              <PlusCircle className="w-3 h-3" /> View all projects
-            </Button>
+            {repos.length === 0 ? (
+              <div className="px-4 py-2 text-xs text-muted-foreground italic">
+                No repositories imported yet.
+              </div>
+            ) : (
+              repos.slice(0, 6).map((repo) => (
+                <Link href="/repositories" key={repo.id} className="block w-full">
+                  <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-white/5 text-xs truncate">
+                    <FolderGit2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <span className="truncate">{repo.name}</span>
+                  </Button>
+                </Link>
+              ))
+            )}
+
+            <Link href="/onboarding" className="block w-full mt-2">
+              <Button variant="ghost" className="w-full justify-start gap-3 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 text-xs">
+                <PlusCircle className="w-3.5 h-3.5" /> Import Repositories
+              </Button>
+            </Link>
           </div>
         </div>
       </ScrollArea>

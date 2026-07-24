@@ -87,7 +87,7 @@ export default function OnboardingPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Select Repositories</h1>
           <p className="text-muted-foreground">
-            Choose the GitHub repositories you want Archmind to analyze and index.
+            Choose the GitHub repositories you want Syntrix to analyze and index.
           </p>
         </div>
 

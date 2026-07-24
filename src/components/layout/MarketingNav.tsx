@@ -8,19 +8,10 @@ export function MarketingNav() {
     <header className="absolute top-0 left-0 right-0 h-20 flex items-center justify-between px-8 z-50">
       {/* Logo */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 22H7L12 12L17 22H22L12 2Z" fill="url(#paint0_linear)"/>
-            <path d="M12 2L17 12H7L12 2Z" fill="#8B5CF6"/>
-            <defs>
-              <linearGradient id="paint0_linear" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#8B5CF6"/>
-                <stop offset="1" stopColor="#3B82F6"/>
-              </linearGradient>
-            </defs>
-          </svg>
+        <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+          S
         </div>
-        <span className="text-white font-bold tracking-widest text-lg uppercase">Archmind</span>
+        <span className="text-white font-bold tracking-widest text-lg uppercase">Syntrix</span>
       </div>
 
       {/* Center Links */}

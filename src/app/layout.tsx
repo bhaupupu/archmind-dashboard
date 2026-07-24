@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Archmind",
-  description: "Impact analysis for multi-repository codebases",
+  title: "Syntrix",
+  description: "Engineering Intelligence Platform",
 };
 
 export default function RootLayout({
