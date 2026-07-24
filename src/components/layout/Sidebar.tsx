@@ -31,7 +31,7 @@ export function Sidebar() {
         }
       })
       .catch(console.error);
-  }, []);
+  }, [pathname]);
 
   const navItems = [
     { name: "Overview", icon: Box, href: "/" },
@@ -85,13 +85,19 @@ export function Sidebar() {
                 No repositories imported yet.
               </div>
             ) : (
-              repos.slice(0, 6).map((repo) => (
-                <Link href="/repositories" key={repo.id} className="block w-full">
+              repos.slice(0, 8).map((repo) => (
+                <a 
+                  href={`https://github.com/${repo.fullName}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  key={repo.id} 
+                  className="block w-full"
+                >
                   <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-white/5 text-xs truncate">
                     <FolderGit2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                     <span className="truncate">{repo.name}</span>
                   </Button>
-                </Link>
+                </a>
               ))
             )}
 

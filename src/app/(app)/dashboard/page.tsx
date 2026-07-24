@@ -148,7 +148,26 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* TOP KPI GRID */}
+      {/* GETTING STARTED BANNER IF 0 ANALYSES */}
+      {analysisCount === 0 && (
+        <div className="bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-blue-400 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">Import Complete ({repoCount} repositories ready)</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Run your first architectural impact analysis to generate AI insights, recommendations, and risk scores across your codebase.</p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => setIsAnalysisOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 text-xs h-9 px-4 shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> Start First Analysis
+          </Button>
+        </div>
+      )}
       <div className="grid grid-cols-6 gap-4">
         {[
           { label: "Repositories", value: repoCount || "0", sub: "Selected for analysis", icon: Box, subColor: "text-emerald-400" },

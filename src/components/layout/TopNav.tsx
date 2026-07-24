@@ -7,7 +7,7 @@ import {
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup 
 } from "@/components/ui/dropdown-menu";
-import { Search, Bell, Settings, LogOut, User, Database, Share2, Activity, Box, ExternalLink } from "lucide-react";
+import { Search, Bell, Settings, LogOut, User, Database, Share2, Activity, Box, ExternalLink, Code2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -18,12 +18,32 @@ type Repo = {
   owner: string;
 };
 
+type CodeMatch = {
+  path: string;
+  repo: string;
+  url: string;
+  textMatches: string[];
+};
+
 export function TopNav() {
   const [open, setOpen] = useState(false);
   const [username, setUsername] = useState<string>("");
   const [repos, setRepos] = useState<Repo[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [codeResults, setCodeResults] = useState<CodeMatch[]>([]);
+  const [searching, setSearching] = useState(false);
   const router = useRouter();
+
+  const fetchRepos = () => {
+    fetch("/api/v1/repos")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.repos) {
+          setRepos(data.repos);
+        }
+      })
+      .catch(console.error);
+  };
 
   useEffect(() => {
     fetch("/api/v1/account")
@@ -35,15 +55,37 @@ export function TopNav() {
       })
       .catch(console.error);
 
-    fetch("/api/v1/repos")
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data?.repos) {
-          setRepos(data.repos);
-        }
-      })
-      .catch(console.error);
+    fetchRepos();
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      fetchRepos();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setCodeResults([]);
+      setSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSearching(true);
+      fetch(`/api/v1/search?q=${encodeURIComponent(searchQuery)}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.code) {
+            setCodeResults(data.code);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setSearching(false));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleLogout = async () => {
     try {
@@ -87,7 +129,7 @@ export function TopNav() {
             <Search className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="bg-white/5 border border-white/10 rounded-md py-1.5 pl-9 pr-10 text-sm w-64 text-muted-foreground hover:bg-white/10 transition-colors truncate">
-            Search repositories...
+            Search repos & code...
           </div>
           <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/50 border border-white/10">⌘K</span>
@@ -96,12 +138,18 @@ export function TopNav() {
 
         <CommandDialog open={open} onOpenChange={setOpen}>
           <CommandInput 
-            placeholder="Type a repository name or query..." 
+            placeholder="Search repositories or code files..." 
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
           <CommandList>
-            <CommandEmpty>No matching repositories found.</CommandEmpty>
+            {searching && (
+              <div className="p-4 flex items-center justify-center text-xs text-muted-foreground gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-400" /> Searching GitHub codebase...
+              </div>
+            )}
+            
+            <CommandEmpty>No matching repositories or code files found.</CommandEmpty>
             
             {filteredRepos.length > 0 && (
               <CommandGroup heading="Imported Repositories">
@@ -110,7 +158,7 @@ export function TopNav() {
                     key={repo.id} 
                     onSelect={() => {
                       setOpen(false);
-                      router.push('/repositories');
+                      window.open(`https://github.com/${repo.fullName}`, '_blank');
                     }}
                     className="flex items-center justify-between cursor-pointer"
                   >
@@ -118,15 +166,37 @@ export function TopNav() {
                       <Database className="w-4 h-4 text-emerald-400" />
                       <span>{repo.fullName}</span>
                     </div>
-                    <a 
-                      href={`https://github.com/${repo.fullName}`} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-xs text-muted-foreground hover:text-white flex items-center gap-1"
-                    >
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       GitHub <ExternalLink className="w-3 h-3" />
-                    </a>
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {codeResults.length > 0 && (
+              <CommandGroup heading="Code & File Matches">
+                {codeResults.map((match, i) => (
+                  <CommandItem
+                    key={i}
+                    onSelect={() => {
+                      setOpen(false);
+                      window.open(match.url, '_blank');
+                    }}
+                    className="flex flex-col items-start gap-1 cursor-pointer py-2"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2 font-mono text-xs text-blue-400">
+                        <Code2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                        <span>{match.repo}/{match.path}</span>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                    {match.textMatches.length > 0 && (
+                      <p className="text-[11px] text-muted-foreground line-clamp-1 font-mono bg-black/30 p-1 rounded border border-white/5 w-full">
+                        {match.textMatches[0]}
+                      </p>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>

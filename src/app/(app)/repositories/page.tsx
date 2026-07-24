@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Database, Search, Loader2, GitBranch, Clock } from "lucide-react";
+import { Database, Search, Loader2, GitBranch, Clock, ExternalLink, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -35,7 +35,8 @@ export default function RepositoriesPage() {
   }, []);
 
   const filteredRepos = repos.filter(r => 
-    r.fullName.toLowerCase().includes(search.toLowerCase())
+    r.fullName.toLowerCase().includes(search.toLowerCase()) ||
+    r.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -47,12 +48,12 @@ export default function RepositoriesPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Repositories</h1>
-            <p className="text-sm text-muted-foreground">Manage your imported codebases</p>
+            <p className="text-sm text-muted-foreground">Manage and explore your {repos.length} imported codebases</p>
           </div>
         </div>
         
         <Link href="/onboarding">
-          <Button className="bg-white hover:bg-neutral-200 text-black">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium">
             Import More
           </Button>
         </Link>
@@ -64,7 +65,7 @@ export default function RepositoriesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
               className="pl-9 bg-black/40 border-white/10 focus-visible:ring-1 focus-visible:ring-emerald-500 h-10" 
-              placeholder="Search repositories..."
+              placeholder="Search imported repositories..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -77,30 +78,46 @@ export default function RepositoriesPage() {
               <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
             </div>
           ) : filteredRepos.length === 0 ? (
-            <div className="flex justify-center items-center h-64 text-muted-foreground">
-              {search ? "No repositories match your search." : "No repositories imported yet."}
+            <div className="flex flex-col justify-center items-center h-64 text-muted-foreground gap-3">
+              <p>{search ? "No repositories match your search." : "No repositories imported yet."}</p>
+              {!search && (
+                <Link href="/onboarding">
+                  <Button variant="outline" className="border-white/10 text-white">Import Repositories</Button>
+                </Link>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-2">
               {filteredRepos.map(repo => (
-                <div key={repo.id} className="p-5 rounded-lg border border-white/10 bg-black/40 hover:bg-black/60 transition-colors flex flex-col gap-4">
+                <a
+                  key={repo.id}
+                  href={`https://github.com/${repo.fullName}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-5 rounded-lg border border-white/10 bg-black/40 hover:bg-black/70 hover:border-blue-500/40 transition-all flex flex-col gap-4 group cursor-pointer"
+                >
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-white truncate max-w-[200px]" title={repo.fullName}>
+                      <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors truncate max-w-[220px]" title={repo.fullName}>
                         {repo.name}
                       </h3>
-                      <p className="text-xs text-muted-foreground">{repo.owner}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{repo.owner}</p>
                     </div>
-                    <a href={`https://github.com/${repo.fullName}`} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-white/10 rounded text-muted-foreground hover:text-white transition-colors">
-                      <GitBranch className="w-4 h-4" />
-                    </a>
+                    <div className="p-2 hover:bg-white/10 rounded-md text-muted-foreground group-hover:text-white transition-colors">
+                      <ExternalLink className="w-4 h-4" />
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-auto pt-4 border-t border-white/5">
-                    <Clock className="w-3.5 h-3.5" />
-                    Imported {formatDistanceToNow(new Date(repo.createdAt), { addSuffix: true })}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      Imported {formatDistanceToNow(new Date(repo.createdAt), { addSuffix: true })}
+                    </div>
+                    <span className="text-[10px] text-blue-400 group-hover:underline flex items-center gap-1 font-medium">
+                      GitHub <GitBranch className="w-3 h-3" />
+                    </span>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           )}
